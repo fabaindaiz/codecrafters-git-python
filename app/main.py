@@ -1,5 +1,7 @@
 import sys
+from app.parse import parse_tree
 from app.storage import init_git, read_object, write_object
+from app.util import read_file
 
 def main():
     # You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -10,14 +12,18 @@ def main():
             init_git()
             return
         case ['cat-file', '-p', hash]:
-            _, content = read_object(hash)
+            type, content = read_object(hash)
             sys.stdout.write(content.decode())
             return
-        case ['hash-object', '-w', filename]:
-            with open(filename, "rb") as file:
-                content = file.read()
+        case ['hash-object', '-w', filepath]:
+            content = read_file(filepath)
             hash = write_object(content, "blob").hex()
             sys.stdout.write(hash)
+            return
+        case ['ls-tree', '--name-only', hash]:
+            type, content = read_object(hash)
+            tree_str = parse_tree(content)
+            sys.stdout.write(tree_str)
             return
         case _:
             command = sys.argv[1]
