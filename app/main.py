@@ -1,5 +1,5 @@
 import sys
-from app.parse import parse_tree
+from app.objects.tree import parse_tree, create_tree
 from app.storage import init_git, read_object, write_object
 from app.util import read_file
 
@@ -24,6 +24,10 @@ def main():
             type, content = read_object(hash)
             tree_str = parse_tree(content)
             sys.stdout.write(tree_str)
+            return
+        case ['write-tree']:
+            hash = create_tree(".").hex()
+            sys.stdout.write(hash)
             return
         case _:
             command = sys.argv[1]
