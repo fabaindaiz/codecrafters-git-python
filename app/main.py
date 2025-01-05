@@ -2,6 +2,7 @@ import sys
 from app.object.blob import cat_file, hash_object
 from app.object.tree import ls_tree, write_tree
 from app.object.commit import commit_tree
+from app.storage.remote import git_clone
 from app.storage.folder import git_init
 from app.parse import parse_argv
 
@@ -20,6 +21,8 @@ def main():
             write_tree(*args, **kwargs)
         case 'commit-tree':
             commit_tree(*args, **kwargs)
+        case 'clone':
+            git_clone(*args, **kwargs)
         case _:
             raise RuntimeError(f"Unknown command #{command}")
 

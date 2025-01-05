@@ -9,3 +9,4 @@
 set -e # Exit on failure
 
 # (This file is empty since Python programs don't use a compile step)
+pip install -r requirements.txt
