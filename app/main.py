@@ -1,41 +1,26 @@
 import sys
-from app.object.commit import create_commit
-from app.object.tree import parse_tree, create_tree
-from app.storage import init_git, read_object, write_object
-from app.util import read_file
+from app.object.blob import cat_file, hash_object
+from app.object.tree import ls_tree, write_tree
+from app.object.commit import commit_tree
+from app.storage.folder import git_init
+from app.parse import parse_argv
 
 def main():
-    # You can use print statements as follows for debugging, they'll be visible when running tests.
-    print("Logs from your program will appear here!", file=sys.stderr)
-
-    match sys.argv[1:]:
-        case ['init']:
-            init_git()
-            return
-        case ['cat-file', '-p', hash]:
-            type, content = read_object(hash)
-            sys.stdout.write(content.decode())
-            return
-        case ['hash-object', '-w', filepath]:
-            content = read_file(filepath)
-            hash = write_object(content, "blob").hex()
-            sys.stdout.write(hash)
-            return
-        case ['ls-tree', '--name-only', hash]:
-            type, content = read_object(hash)
-            tree_str = parse_tree(content)
-            sys.stdout.write(tree_str)
-            return
-        case ['write-tree']:
-            hash = create_tree(".").hex()
-            sys.stdout.write(hash)
-            return
-        case ['commit-tree', tree_sha, '-p', commit_sha, '-m', message]:
-            hash = create_commit(tree_sha, commit_sha, message).hex()
-            sys.stdout.write(hash)
-            return
+    command, args, kwargs = parse_argv(sys.argv[1:])
+    match command:
+        case 'init':
+            git_init()
+        case 'cat-file':
+            cat_file(*args, **kwargs)
+        case 'hash-object':
+            hash_object(*args, **kwargs)
+        case 'ls-tree':
+            ls_tree(*args, **kwargs)
+        case 'write-tree':
+            write_tree(*args, **kwargs)
+        case 'commit-tree':
+            commit_tree(*args, **kwargs)
         case _:
-            command = sys.argv[1]
             raise RuntimeError(f"Unknown command #{command}")
 
 if __name__ == "__main__":

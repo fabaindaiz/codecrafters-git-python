@@ -1,7 +1,14 @@
 import os
+import sys
 from typing import Optional
 from datetime import datetime, UTC
-from app.storage import write_object
+from app.storage.object import write_object
+
+# Commands
+def commit_tree(tree_sha: str, p: str, m: str):
+    hash = create_commit(tree_sha, commit_sha=p, message=m).hex()
+    sys.stdout.write(hash)
+
 
 def author_environ(
         author_name: str = "Author Name",
@@ -31,6 +38,5 @@ def create_commit(
     parent = f"parent {commit_sha}"
     author = author_environ()
     committer = committer_environ()
-
     content = f"{tree}\n{parent}\n{author}\n{committer}\n\n{message}\n".encode()
     return write_object(content, "commit")

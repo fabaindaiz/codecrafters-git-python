@@ -1,15 +1,31 @@
 import os
-from app.storage import write_object
-from app.util import read_file
+import sys
+from app.storage.object import read_file, read_object, write_object
 
-def parse_tree(content: bytes) -> str:
+# Commands
+def ls_tree(tree_sha: str, name_only: bool = False):
+    type, content = read_object(tree_sha)
+    if type != "tree":
+        raise ValueError(f"{tree_sha} is not a tree object")
+    tree_str = parse_tree(content, name_only=name_only)
+    sys.stdout.write(tree_str)
+
+def write_tree():
+    hash = create_tree(".").hex()
+    sys.stdout.write(hash)
+
+
+def parse_tree(content: bytes, name_only: bool = False) -> str:
     tree_str = ""
     while content != b"":
         stat, content = content.split(b"\0", 1)
         mode, name = stat.decode().split(" ", 1)
-        #object = content[:20].decode()
+        object = content[:20].hex()
 
-        tree_str += f"{name}\n"
+        if name_only:
+            tree_str += f"{name}\n"
+        else:
+            tree_str += f"{mode} type {object}    {name}"
         content = content[20:]
     return tree_str
 
