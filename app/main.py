@@ -1,5 +1,6 @@
 import sys
-from app.objects.tree import parse_tree, create_tree
+from app.object.commit import create_commit
+from app.object.tree import parse_tree, create_tree
 from app.storage import init_git, read_object, write_object
 from app.util import read_file
 
@@ -27,6 +28,10 @@ def main():
             return
         case ['write-tree']:
             hash = create_tree(".").hex()
+            sys.stdout.write(hash)
+            return
+        case ['commit-tree', tree_sha, '-p', commit_sha, '-m', message]:
+            hash = create_commit(tree_sha, commit_sha, message).hex()
             sys.stdout.write(hash)
             return
         case _:
