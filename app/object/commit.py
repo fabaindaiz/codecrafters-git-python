@@ -2,7 +2,8 @@ import os
 import sys
 from typing import Optional
 from datetime import datetime, UTC
-from app.storage.object import write_object
+from app.object.tree import restore_tree
+from app.storage.object import read_object, write_object
 
 # Commands
 def commit_tree(tree_sha: str, p: str, m: str):
@@ -40,3 +41,20 @@ def create_commit(
     committer = committer_environ()
     content = f"{tree}\n{parent}\n{author}\n{committer}\n\n{message}\n".encode()
     return write_object(content, "commit")
+
+
+def commit_objects(hash: str):
+    type, content = read_object(hash)
+    tree, parent, author, committer, _, message, _ = content.split(b"\n", 6)
+    tree_hex = tree.decode().removeprefix("tree ")
+    parent_hex = parent.decode().removeprefix("parent ")
+    return tree_hex, parent_hex
+
+def restore_commit(hash: str):
+    type, content = read_object(hash)
+    if type != "commit":
+        raise ValueError(f"{hash} is not a commit object")
+    
+    tree, parent, author, committer, _, message, _ = content.split(b"\n", 6)
+    tree_hex = tree.decode().removeprefix("tree ")
+    restore_tree(".", tree_hex)

@@ -1,5 +1,6 @@
 import os
 import sys
+from app.object.blob import restore_blob
 from app.storage.object import read_file, read_object, write_object
 
 # Commands
@@ -7,7 +8,12 @@ def ls_tree(tree_sha: str, name_only: bool = False):
     type, content = read_object(tree_sha)
     if type != "tree":
         raise ValueError(f"{tree_sha} is not a tree object")
-    tree_str = parse_tree(content, name_only=name_only)
+    tree_items = parse_tree(content)
+
+    if name_only:
+        tree_str = "".join(f"{item[2]}\n" for item in tree_items)
+    else:
+        tree_str = "".join(f"{item[0]} type {item[1]}    {item[2]}\n" for item in tree_items)
     sys.stdout.write(tree_str)
 
 def write_tree():
@@ -15,19 +21,24 @@ def write_tree():
     sys.stdout.write(hash)
 
 
-def parse_tree(content: bytes, name_only: bool = False) -> str:
-    tree_str = ""
+def decode_mode(mode: str) -> str:
+    if mode == "100644":
+        return "blob"
+    elif mode == "40000":
+        return "tree"
+    else:
+        raise ValueError(f"Unknown mode {mode}")
+
+def parse_tree(content: bytes) -> list[tuple[int, str, str]]:
+    tree_items: list[tuple[int, bytes, str]] = []
     while content != b"":
         stat, content = content.split(b"\0", 1)
         mode, name = stat.decode().split(" ", 1)
         object = content[:20].hex()
-
-        if name_only:
-            tree_str += f"{name}\n"
-        else:
-            tree_str += f"{mode} type {object}    {name}"
         content = content[20:]
-    return tree_str
+
+        tree_items.append((mode, object, name))
+    return tree_items
 
 def create_tree(folder: str):
     tree: dict[str, str] = {}
@@ -49,3 +60,27 @@ def create_tree(folder: str):
     tree = dict(sorted(tree.items(), key=lambda item: item[0]))
     content = b"".join(tree.values())
     return write_object(content, type="tree")
+
+
+def restore_case(type: str, filepath: str, hash: str):
+    type, _ = read_object(hash)
+    if type == "tree":
+        restore_tree(filepath, hash)
+    elif type == "blob":
+        restore_blob(filepath, hash)
+    else:
+        raise ValueError(f"{hash} is not a tree or blob object")
+
+def restore_tree(path: str, hash: str):
+    type, content = read_object(hash)
+    if type != "tree":
+        raise ValueError(f"{hash} is not a tree object")
+    
+    print(f"restore tree {hash} to {path}", file=sys.stderr)
+    os.makedirs(path, exist_ok=True)
+    tree_items = parse_tree(content)
+    for mode, object, name in tree_items:
+
+        type = decode_mode(mode)
+        filepath = os.path.join(path, name)
+        restore_case(type, filepath, object)

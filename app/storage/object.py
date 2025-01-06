@@ -7,6 +7,12 @@ def read_file(filepath: str):
     with open(filepath, "rb") as file:
         return file.read()
 
+def write_file(filepath: str, content: bytes):
+    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+    with open(filepath, "wb") as file:
+        file.write(content)
+
+
 def read_object(hash: str) -> tuple[str, bytes]:
     filename = f".git/objects/{hash[0:2]}/{hash[2:]}"
     with open(filename, "rb") as file:
@@ -26,9 +32,7 @@ def write_object(content: bytes, type: str) -> bytes:
     hash_sha1 = hashlib.sha1(object).digest()
     hex = hash_sha1.hex()
     filename = f".git/objects/{hex[0:2]}/{hex[2:]}"
-    os.makedirs(f".git/objects/{hex[0:2]}", exist_ok=True)
+    write_file(filename, compressed)
 
-    with open(filename, "wb") as file:
-        file.write(compressed)
     print(f"object write {type} {len(content)} {hex}", file=sys.stderr)
     return hash_sha1
