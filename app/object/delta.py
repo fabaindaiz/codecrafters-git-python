@@ -42,7 +42,7 @@ def parse_delta(content: bytes):
     content = content[index:]
     target, index = decode_size(content[index:])
     content = content[index:]
-    print(f"delta {source} {target}", file=sys.stderr)
+    #print(f"delta {source} {target}", file=sys.stderr)
 
     instr_list: list[tuple] = []
     while content != b"":

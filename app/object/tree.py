@@ -22,10 +22,10 @@ def write_tree():
 
 
 def decode_mode(mode: str) -> str:
-    if mode == "100644":
-        return "blob"
-    elif mode == "40000":
-        return "tree"
+    if mode.startswith("100"):
+        return "blob", int(mode[3:])
+    elif mode.startswith("40"):
+        return "tree", int(mode[2:])
     else:
         raise ValueError(f"Unknown mode {mode}")
 
@@ -50,7 +50,7 @@ def create_tree(folder: str):
         elif os.path.isfile(path):
             content = read_file(path)
             digest = write_object(content, type="blob")
-            mode = "100644"
+            mode = oct(os.stat(path).st_mode).removeprefix("0o")
         elif os.path.isdir(path):
             digest = create_tree(path)
             mode = "40000"
@@ -62,12 +62,14 @@ def create_tree(folder: str):
     return write_object(content, type="tree")
 
 
-def restore_case(type: str, filepath: str, hash: str):
+def restore_case(type: str, filepath: str, hash: str, perms: int):
     type, _ = read_object(hash)
     if type == "tree":
+        os.makedirs(filepath, exist_ok=True)
         restore_tree(filepath, hash)
     elif type == "blob":
         restore_blob(filepath, hash)
+        os.chmod(filepath, perms)
     else:
         raise ValueError(f"{hash} is not a tree or blob object")
 
@@ -77,10 +79,9 @@ def restore_tree(path: str, hash: str):
         raise ValueError(f"{hash} is not a tree object")
     
     print(f"restore tree {hash} to {path}", file=sys.stderr)
-    os.makedirs(path, exist_ok=True)
     tree_items = parse_tree(content)
     for mode, object, name in tree_items:
 
-        type = decode_mode(mode)
+        type, perms = decode_mode(mode)
         filepath = os.path.join(path, name)
-        restore_case(type, filepath, object)
+        restore_case(type, filepath, object, perms)
